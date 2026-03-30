@@ -79,10 +79,30 @@ exports.getBudgetById = async (req, res) => {
 
 exports.updateBudget = async (req, res) => {
   try {
-    const budget = await Budget.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updates = { ...req.body };
+
+    // Convert scheduledDate from DD/MM/YYYY to ISO if needed
+    if (updates.scheduledDate && typeof updates.scheduledDate === 'string') {
+      const parts = updates.scheduledDate.split('/');
+      if (parts.length === 3) {
+        // DD/MM/YYYY → YYYY-MM-DD
+        updates.scheduledDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      } else {
+        updates.scheduledDate = new Date(updates.scheduledDate);
+      }
+      if (isNaN(updates.scheduledDate)) delete updates.scheduledDate;
+    }
+
+    const budget = await Budget.findByIdAndUpdate(
+      req.params.id,
+      updates,
+      { new: true, runValidators: true }
+    ).populate('client', 'name email phone avatar');
+
     if (!budget) return res.status(404).json({ message: 'Orçamento não encontrado' });
     res.json({ budget });
   } catch (err) {
+    console.error('updateBudget error:', err);
     res.status(500).json({ message: err.message });
   }
 };
