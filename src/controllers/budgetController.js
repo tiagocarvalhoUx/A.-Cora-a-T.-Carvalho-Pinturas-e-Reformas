@@ -3,7 +3,22 @@ const Budget = require('../models/Budget');
 exports.createBudget = async (req, res) => {
   try {
     const { serviceType, description, area, address, phone } = req.body;
-    const photos = req.files?.map((f) => ({ url: f.path, publicId: f.filename })) || [];
+
+    if (!serviceType || !description || !area || !address) {
+      return res.status(400).json({ message: 'Campos obrigatórios: serviceType, description, area, address' });
+    }
+
+    let parsedAddress;
+    try {
+      parsedAddress = typeof address === 'string' ? JSON.parse(address) : address;
+    } catch {
+      return res.status(400).json({ message: 'Endereço inválido.' });
+    }
+
+    // f.path exists when using CloudinaryStorage; skip if using memoryStorage (no path/filename)
+    const photos = (req.files || [])
+      .filter((f) => f.path)
+      .map((f) => ({ url: f.path, publicId: f.filename }));
 
     const budget = new Budget({
       client: req.user._id,
@@ -11,7 +26,7 @@ exports.createBudget = async (req, res) => {
       description,
       phone: phone || null,
       area: Number(area),
-      address: typeof address === 'string' ? JSON.parse(address) : address,
+      address: parsedAddress,
       photos,
     });
     budget.estimatedPrice = budget.calculateEstimate();
@@ -20,7 +35,8 @@ exports.createBudget = async (req, res) => {
 
     res.status(201).json({ budget });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('createBudget error:', err);
+    res.status(500).json({ message: err.message || 'Erro interno ao criar orçamento.' });
   }
 };
 
