@@ -2,13 +2,14 @@ const Budget = require('../models/Budget');
 
 exports.createBudget = async (req, res) => {
   try {
-    const { serviceType, description, area, address } = req.body;
+    const { serviceType, description, area, address, phone } = req.body;
     const photos = req.files?.map((f) => ({ url: f.path, publicId: f.filename })) || [];
 
     const budget = new Budget({
       client: req.user._id,
       serviceType,
       description,
+      phone: phone || null,
       area: Number(area),
       address: typeof address === 'string' ? JSON.parse(address) : address,
       photos,

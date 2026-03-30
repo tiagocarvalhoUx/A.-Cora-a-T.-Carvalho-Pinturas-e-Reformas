@@ -9,6 +9,7 @@ const budgetSchema = new mongoose.Schema(
       required: true,
     },
     description: { type: String, required: true },
+    phone: { type: String, default: null },
     area: { type: Number, required: true }, // em m²
     photos: [{ url: String, publicId: String }],
     address: {
