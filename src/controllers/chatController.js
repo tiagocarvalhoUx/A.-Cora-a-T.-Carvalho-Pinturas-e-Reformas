@@ -1,19 +1,35 @@
 const Chat = require('../models/Chat');
+const User = require('../models/User');
 
 exports.getOrCreateChat = async (req, res) => {
   try {
-    const { budgetId, adminId } = req.body;
+    const { budgetId, adminId: providedAdminId } = req.body;
     const userId = req.user._id;
 
+    // Determine the other participant
+    let otherId = providedAdminId;
+
+    if (!otherId) {
+      if (req.user.role === 'client') {
+        // Client: find any admin user automatically
+        const admin = await User.findOne({ role: 'admin' });
+        if (admin) otherId = admin._id;
+      }
+      // If the caller is already admin and no otherId, just look up by admin alone
+    }
+
+    const participantIds = otherId ? [userId, otherId] : [userId];
+
+    // Try to find an existing chat with exactly these participants
     let chat = await Chat.findOne({
-      participants: { $all: [userId, adminId] },
+      participants: { $all: participantIds },
       ...(budgetId ? { budget: budgetId } : {}),
     }).populate('participants', 'name avatar role');
 
     if (!chat) {
       chat = await Chat.create({
         budget: budgetId || null,
-        participants: [userId, adminId],
+        participants: participantIds,
         messages: [],
       });
       await chat.populate('participants', 'name avatar role');
@@ -29,6 +45,7 @@ exports.getMyChats = async (req, res) => {
   try {
     const chats = await Chat.find({ participants: req.user._id })
       .populate('participants', 'name avatar role')
+      .populate('messages.sender', 'name avatar')
       .sort({ lastMessageAt: -1 });
     res.json({ chats });
   } catch (err) {
@@ -43,7 +60,11 @@ exports.sendMessage = async (req, res) => {
 
     const chat = await Chat.findById(req.params.chatId);
     if (!chat) return res.status(404).json({ message: 'Chat não encontrado' });
-    if (!chat.participants.includes(req.user._id)) {
+
+    const isParticipant = chat.participants.some(
+      (p) => p.toString() === req.user._id.toString()
+    );
+    if (!isParticipant) {
       return res.status(403).json({ message: 'Você não faz parte deste chat' });
     }
 
