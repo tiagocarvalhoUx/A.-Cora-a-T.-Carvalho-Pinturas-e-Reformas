@@ -10,21 +10,38 @@ const connectDB = require('./src/config/database');
 const app = express();
 const server = http.createServer(app);
 
-// Socket.io para chat em tempo real
+// ── CORS origins ──────────────────────────────────────────────────────────────
+const LOCALHOST_ORIGINS = [
+  'http://localhost:8081',
+  'http://localhost:8082',
+  'http://localhost:8083',
+  'http://localhost:3000',
+  'http://localhost:19006',
+  'http://127.0.0.1:8081',
+  'http://127.0.0.1:8082',
+];
+const productionOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((o) => o.trim())
+  : [];
+const allowedOrigins = [...new Set([...LOCALHOST_ORIGINS, ...productionOrigins])];
+
+const corsOriginFn = (origin, cb) => {
+  if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+  cb(new Error(`CORS bloqueado para origem: ${origin}`));
+};
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_URL || '*', methods: ['GET', 'POST'] },
+  cors: { origin: corsOriginFn, methods: ['GET', 'POST'], credentials: true },
 });
 
-// Middlewares
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',')
-  : ['*'];
+// ── Middlewares ───────────────────────────────────────────────────────────────
+
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) cb(null, true);
-    else cb(new Error('CORS bloqueado'));
-  },
+  origin: corsOriginFn,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -60,7 +77,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send_message', ({ chatId, message, recipientId }) => {
-    io.to(chatId).emit('new_message', message);
+    socket.to(chatId).emit('new_message', message);
     const recipientSocketId = connectedUsers.get(recipientId);
     if (recipientSocketId) {
       io.to(recipientSocketId).emit('notification', {
