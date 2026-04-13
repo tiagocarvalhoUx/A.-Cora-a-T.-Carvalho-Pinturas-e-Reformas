@@ -26,7 +26,9 @@ const productionOrigins = process.env.CLIENT_URL
 const allowedOrigins = [...new Set([...LOCALHOST_ORIGINS, ...productionOrigins])];
 
 const corsOriginFn = (origin, cb) => {
-  if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+  if (!origin) return cb(null, true);
+  if (allowedOrigins.includes(origin)) return cb(null, true);
+  if (origin.endsWith('.vercel.app')) return cb(null, true);
   cb(new Error(`CORS bloqueado para origem: ${origin}`));
 };
 
