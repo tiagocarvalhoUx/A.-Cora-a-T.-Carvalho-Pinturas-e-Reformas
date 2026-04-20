@@ -11,6 +11,7 @@ const portfolioSchema = new mongoose.Schema(
     },
     beforeImage: { url: String, publicId: String },
     afterImage: { url: String, publicId: String },
+    extraImages: [{ url: String, publicId: String, type: { type: String, enum: ['before', 'after'] } }],
     area: { type: Number },
     duration: { type: String }, // ex: "3 dias"
     location: { type: String },

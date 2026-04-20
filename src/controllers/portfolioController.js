@@ -22,6 +22,13 @@ exports.getById = async (req, res) => {
   }
 };
 
+function buildExtraImages(files) {
+  const extras = [];
+  (files.extraBefore || []).forEach((f) => extras.push({ url: f.path, publicId: f.filename, type: 'before' }));
+  (files.extraAfter  || []).forEach((f) => extras.push({ url: f.path, publicId: f.filename, type: 'after'  }));
+  return extras;
+}
+
 exports.create = async (req, res) => {
   try {
     const { title, description, serviceType, area, duration, location, featured } = req.body;
@@ -44,6 +51,7 @@ exports.create = async (req, res) => {
       featured: featured === 'true',
       beforeImage,
       afterImage,
+      extraImages: buildExtraImages(files),
     });
     res.status(201).json({ item });
   } catch (err) {
@@ -53,7 +61,21 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const item = await Portfolio.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const files = req.files || {};
+    const update = { ...req.body };
+
+    if (files.before?.[0])
+      update.beforeImage = { url: files.before[0].path, publicId: files.before[0].filename };
+    if (files.after?.[0])
+      update.afterImage = { url: files.after[0].path, publicId: files.after[0].filename };
+
+    const newExtras = buildExtraImages(files);
+    if (newExtras.length > 0) {
+      update.$push = { extraImages: { $each: newExtras } };
+      delete update.extraImages;
+    }
+
+    const item = await Portfolio.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!item) return res.status(404).json({ message: 'Item não encontrado' });
     res.json({ item });
   } catch (err) {
