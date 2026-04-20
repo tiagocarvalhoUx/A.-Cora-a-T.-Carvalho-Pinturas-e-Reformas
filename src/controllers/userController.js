@@ -14,6 +14,18 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+exports.setRole = async (req, res) => {
+  try {
+    const { email, role } = req.body;
+    if (!['client', 'admin'].includes(role)) return res.status(400).json({ message: 'Role inválido' });
+    const user = await User.findOneAndUpdate({ email }, { role }, { new: true });
+    if (!user) return res.status(404).json({ message: 'Usuário não encontrado' });
+    res.json({ message: `${email} agora é ${role}`, user: { email: user.email, role: user.role } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.getAdminStats = async (req, res) => {
   try {
     const [totalBudgets, pendingBudgets, completedBudgets, inProgressBudgets] = await Promise.all([
