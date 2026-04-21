@@ -5,6 +5,7 @@ const {
   getAllBudgets,
   getBudgetById,
   updateBudget,
+  deleteBudget,
   rateBudget,
 } = require('../controllers/budgetController');
 const { protect, adminOnly } = require('../middleware/auth');
@@ -17,6 +18,7 @@ router.get('/my', getMyBudgets);
 router.get('/', adminOnly, getAllBudgets);
 router.get('/:id', getBudgetById);
 router.patch('/:id', adminOnly, updateBudget);
+router.delete('/:id', adminOnly, deleteBudget);
 router.post('/:id/rate', rateBudget);
 
 module.exports = router;

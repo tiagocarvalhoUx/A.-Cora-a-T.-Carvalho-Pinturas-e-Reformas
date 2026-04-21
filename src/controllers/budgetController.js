@@ -107,6 +107,16 @@ exports.updateBudget = async (req, res) => {
   }
 };
 
+exports.deleteBudget = async (req, res) => {
+  try {
+    const budget = await Budget.findByIdAndDelete(req.params.id);
+    if (!budget) return res.status(404).json({ message: 'Orçamento não encontrado' });
+    res.json({ message: 'Orçamento excluído.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.rateBudget = async (req, res) => {
   try {
     const { stars, comment } = req.body;
