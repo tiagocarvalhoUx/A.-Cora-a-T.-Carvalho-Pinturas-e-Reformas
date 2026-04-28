@@ -11,6 +11,28 @@ const signToken = (id) =>
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
+const firstClientUrl = () => {
+  const configured = process.env.PUBLIC_APP_URL || process.env.CLIENT_URL;
+  return configured?.split(',')[0]?.trim()?.replace(/\/$/, '');
+};
+
+const requestOrigin = (req) => {
+  const origin = req.get('origin');
+  return origin?.startsWith('http') ? origin.replace(/\/$/, '') : null;
+};
+
+const buildMagicLink = (req, token) => {
+  const configured = process.env.MAGIC_LINK_REDIRECT_URL;
+  const webBase = firstClientUrl() || requestOrigin(req);
+  const base = configured?.startsWith('http')
+    ? configured
+    : webBase
+      ? `${webBase}/magic-link`
+      : configured || 'acoraca://magic-link';
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}token=${token}`;
+};
+
 exports.register = async (req, res) => {
   try {
     const { name, email, password, phone, role } = req.body;
@@ -85,9 +107,7 @@ exports.requestMagicLink = async (req, res) => {
       requestIp: req.ip,
     });
 
-    const base = process.env.MAGIC_LINK_REDIRECT_URL || 'acoraca://magic-link';
-    const separator = base.includes('?') ? '&' : '?';
-    const link = `${base}${separator}token=${token}`;
+    const link = buildMagicLink(req, token);
 
     try {
       await sendMagicLinkEmail({ to: rawEmail, link });

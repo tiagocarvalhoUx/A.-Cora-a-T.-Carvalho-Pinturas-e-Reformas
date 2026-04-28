@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const budgetSchema = new mongoose.Schema(
   {
     client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    contactName: { type: String, required: true, trim: true },
+    contactEmail: { type: String, lowercase: true, trim: true, default: null },
     serviceType: {
       type: String,
       enum: ['internal', 'external', 'texture', 'lacquering', 'waterproofing', 'restoration'],
@@ -26,6 +28,13 @@ const budgetSchema = new mongoose.Schema(
       default: 'pending',
     },
     scheduledDate: { type: Date, default: null },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String, default: null },
+    emailVerificationExpires: { type: Date, default: null },
+    emailVerifiedAt: { type: Date, default: null },
+    contactValidationMethod: { type: String, enum: ['whatsapp', 'email'], default: 'whatsapp' },
+    whatsappValidationCode: { type: String, default: null },
+    whatsappValidationRequestedAt: { type: Date, default: null },
     completedDate: { type: Date, default: null },
     adminNotes: { type: String, default: null },
     rating: {

@@ -22,3 +22,17 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: PUBLIC_APP_URL
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: BUSINESS_WHATSAPP
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAGIC_LINK_FROM_EMAIL
+        sync: false
+      - key: MAGIC_LINK_REDIRECT_URL
+        sync: false
