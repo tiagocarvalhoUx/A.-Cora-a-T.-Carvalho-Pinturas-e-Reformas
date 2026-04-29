@@ -30,9 +30,9 @@ services:
         sync: false
       - key: BUSINESS_WHATSAPP
         sync: false
-      - key: RESEND_API_KEY
+      - key: FIREBASE_PROJECT_ID
         sync: false
-      - key: MAGIC_LINK_FROM_EMAIL
+      - key: FIREBASE_CLIENT_EMAIL
         sync: false
-      - key: MAGIC_LINK_REDIRECT_URL
+      - key: FIREBASE_PRIVATE_KEY
         sync: false
