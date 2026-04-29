@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const MagicLinkToken = require('../models/MagicLinkToken');
 const { sendMagicLinkEmail } = require('../services/magicLinkMailer');
+const { getFirebaseAuthAdmin } = require('../services/firebaseAdmin');
 
 const MAGIC_LINK_TTL_MIN = 15;
 
@@ -159,5 +160,43 @@ exports.verifyMagicLink = async (req, res) => {
   } catch (err) {
     console.error('[magic-link] verify error:', err);
     return res.status(500).json({ message: 'Erro ao validar link' });
+  }
+};
+
+exports.verifyFirebaseMagicLink = async (req, res) => {
+  try {
+    const idToken = (req.body?.idToken || '').toString().trim();
+    if (!idToken) {
+      return res.status(400).json({ message: 'Token do Firebase nao informado' });
+    }
+
+    const decoded = await getFirebaseAuthAdmin().verifyIdToken(idToken);
+    const email = (decoded.email || '').toString().trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: 'E-mail nao disponivel no token do Firebase' });
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const placeholderPassword = crypto.randomBytes(24).toString('hex');
+      user = await User.create({
+        name: decoded.name || email.split('@')[0],
+        email,
+        password: placeholderPassword,
+        role: 'client',
+      });
+    }
+
+    if (!user.isActive) return res.status(403).json({ message: 'Conta desativada' });
+
+    const token = signToken(user._id);
+    return res.json({ token, user });
+  } catch (err) {
+    console.error('[firebase-auth] verify error:', err);
+    return res.status(401).json({
+      message:
+        'Nao foi possivel validar o acesso com Firebase. Confira a configuracao do Firebase Admin no backend.',
+    });
   }
 };
